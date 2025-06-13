@@ -9,3 +9,5 @@ pydantic-settings
 pytest
 bcrypt
 python-jose[cryptography]
+dotenv
+redis

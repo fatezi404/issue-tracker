@@ -18,10 +18,14 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     async def update_user(self, *, id: int, obj_in: UserUpdate, db: AsyncSession) -> User | None:
         existing_user = await self.get(id=id, db=db)
+        if not existing_user:
+            return None
         return await self.update(obj_current=existing_user, obj_in=obj_in, db=db)
 
     async def update_user_is_active(self, *, id: int, db: AsyncSession) -> User | None:
         existing_user = await self.get(id=id, db=db)
+        if not existing_user:
+            return None
         existing_user.is_active = not existing_user.is_active
         await db.commit()
         await db.refresh(existing_user)
@@ -29,6 +33,8 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
 
     async def authenticate_user(self, *, email: EmailStr, password: str, db: AsyncSession) -> User | None:
         existing_user = await self.get(email=str(email), db=db)
+        if not existing_user:
+            return None
         if not verify_password(plain_password=password, hashed_password=existing_user.hashed_password):
             return None
         return existing_user

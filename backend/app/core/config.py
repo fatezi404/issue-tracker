@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 load_dotenv()
 
 
+
 class UserRole(str, Enum):
     user = 'user'
     moderator = 'moderator'
@@ -15,10 +16,11 @@ class UserRole(str, Enum):
 class Settings(BaseSettings):
     DATABASE_URL: PostgresDsn
     DATABASE_PORT: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    DATABASE_USER: str
+    DATABASE_PASSWORD: str
+    DATABASE_NAME: str
     SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     class Config:
         env_file = '.env'

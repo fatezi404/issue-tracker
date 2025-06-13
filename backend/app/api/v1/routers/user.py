@@ -1,7 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import EmailStr
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user_model import User
@@ -39,8 +38,3 @@ async def update_user(id: int, obj_in: UserUpdate, db: Annotated[AsyncSession, D
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='User does not exist')
     return updated_user
-
-
-@router.post('/auth', response_model=UserResponse, tags=['user'])
-async def authenticate_user(email: EmailStr, password: str, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
-    pass
