@@ -38,9 +38,17 @@ async def delete_user(id: int, db: Annotated[AsyncSession, Depends(get_db)], fre
     return deleted_user
 
 
-@router.patch('', response_model=UserResponse, tags=['user'])
+@router.patch('/{id}', response_model=UserResponse, tags=['user'])
 async def update_user(id: int, obj_in: UserUpdate, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
     updated_user = await user.update_user(id=id, obj_in=obj_in, db=db)
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='User does not exist')
+    return updated_user
+
+
+@router.patch('/{id}/is-active', response_model=UserResponse, tags=['user'])
+async def update_user_is_active(id: int, db: Annotated[AsyncSession, Depends(get_db)]) -> User:
+    updated_user = await user.update_user_is_active(id=id, db=db)
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='User does not exist')
     return updated_user
