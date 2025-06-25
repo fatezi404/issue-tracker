@@ -31,7 +31,7 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         await db.refresh(existing_user)
         return existing_user
 
-    async def authenticate_user(self, *, email: EmailStr, password: str, db: AsyncSession) -> User | None:
+    async def authenticate(self, *, email: EmailStr, password: str, db: AsyncSession) -> User | None:
         existing_user = await self.get(email=str(email), db=db)
         if not existing_user:
             return None

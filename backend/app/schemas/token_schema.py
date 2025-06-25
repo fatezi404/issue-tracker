@@ -8,8 +8,8 @@ class OrmBaseModel(BaseModel):
 
 class Token(OrmBaseModel):
     access_token: str
-    token_type: str
     refresh_token: str
+    token_type: str
     user: UserResponse
 
 class TokenResponse(OrmBaseModel):

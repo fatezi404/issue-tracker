@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta
-
 import bcrypt
+from datetime import datetime, timedelta
 from jose import ExpiredSignatureError, jwt
 
 from app.core.config import settings
 
-ALGORITHM = 'HS256' # fixme: better to use asymmetric RS256 encryption with private and public keys
+ALGORITHM = 'HS256'
 
 def create_access_token(subject: int, expire_time: timedelta = None) -> str:
     if expire_time:
@@ -34,11 +33,7 @@ def create_refresh_token(subject: int, expire_time: timedelta = None) -> str:
 
 
 def decode_token(token: str) -> dict | None:
-    try:
-        return jwt.decode(token, settings.SECRET_KEY, [ALGORITHM])
-    except ExpiredSignatureError:
-        print('LOG: expired token')
-    return None
+    return jwt.decode(token, settings.SECRET_KEY, [ALGORITHM])
 
 
 def get_hashed_password(plain_password: str | bytes) -> str:

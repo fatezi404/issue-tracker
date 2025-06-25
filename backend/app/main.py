@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.v1.routers import user
+from app.api.v1.routers import login
 
 app = FastAPI()
 
@@ -9,4 +10,6 @@ app = FastAPI()
 def healthcheck():
     return {'status': '200'}
 
-app.include_router(router=user.router, prefix='/api/v1')
+app.include_router(router=user.router, prefix='/api/v1/user')
+
+app.include_router(router=login.router, prefix='/api/v1/login')

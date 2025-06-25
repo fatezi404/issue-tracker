@@ -39,7 +39,11 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return db_obj
 
     async def update(
-        self, *, obj_current: ModelType, obj_in: UpdateSchemaType | dict[str, Any], db: AsyncSession
+        self,
+        *,
+        obj_current: ModelType,
+        obj_in: UpdateSchemaType | dict[str, Any],
+        db: AsyncSession
     ) -> ModelType | None:
         if isinstance(obj_in, dict):
             update_data = obj_in
