@@ -25,6 +25,10 @@ services:
   db:
     image: postgres
     container_name: postgres_db
+    environment:
+      - POSTGRES_USERNAME=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DATABASE=${DATABASE_NAME}
     env_file:
       - .env
     restart: always
@@ -41,11 +45,11 @@ services:
   redis:
     image: redis:alpine
     container_name: redis_server
+    env_file:
+      - .env
     restart: always
     expose:
       - 6379
-    env_file:
-      - .env
 
 volumes:
   postgres_data:

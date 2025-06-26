@@ -16,7 +16,7 @@ Session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 async def get_redis_db() -> Redis:
     redis = await from_url(
-        str(settings.REDIS_URL),
+        url=str(settings.REDIS_URL),
         encoding='utf8',
         decode_responses=True
     )
