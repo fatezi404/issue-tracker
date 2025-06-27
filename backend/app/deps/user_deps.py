@@ -9,7 +9,7 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 from app.models.user_model import User
 from app.core.security import decode_token
 from app.schemas.user_schema import UserResponse, UserCreate, UserUpdate
-from app.db.session import get_db
+from app.db.session import get_db, get_redis_db
 from app.crud.user_crud import user
 from app.core.config import TokenType
 from app.utils.token import get_valid_tokens, delete_tokens, add_tokens_to_redis
@@ -19,8 +19,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl='/api/v1/login/access-token')
 
 
 async def get_current_user(
-    redis_client: Redis,
-    access_token: Annotated[str, Depends(oauth2_scheme)]
+    access_token: Annotated[str, Depends(oauth2_scheme)],
+    redis_client: Annotated[Redis, Depends(get_redis_db)],
 ) -> User:
     try:
         payload = decode_token(access_token)
