@@ -1,6 +1,6 @@
 import bcrypt
 from datetime import datetime, timedelta
-from jose import ExpiredSignatureError, jwt
+from jose import jwt
 
 from app.core.config import settings
 
@@ -8,7 +8,7 @@ ALGORITHM = 'HS256'
 
 def create_access_token(subject: int, expire_time: timedelta = None) -> str:
     if expire_time:
-        expire = datetime.now() + timedelta(expire_time)
+        expire = datetime.now() + expire_time
     else:
         expire = datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
@@ -21,7 +21,7 @@ def create_access_token(subject: int, expire_time: timedelta = None) -> str:
 
 def create_refresh_token(subject: int, expire_time: timedelta = None) -> str:
     if expire_time:
-        expire = datetime.now() + timedelta(expire_time)
+        expire = datetime.now() + expire_time
     else:
         expire = datetime.now() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {
@@ -47,4 +47,4 @@ def verify_password(plain_password: str | bytes, hashed_password: str | bytes) -
         plain_password = plain_password.encode()
     if isinstance(hashed_password, str):
         hashed_password = hashed_password.encode()
-    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
+    return bcrypt.checkpw(plain_password, hashed_password)
