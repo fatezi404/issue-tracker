@@ -1,8 +1,5 @@
 from datetime import datetime
-
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
-
-from app.core.config import UserRole
 
 
 def validate_password(v: str) -> str:
@@ -37,7 +34,7 @@ class UserUpdate(OrmBaseModel):
     email: EmailStr | None = None
     password: str | None = None
     is_active: bool | None = None
-    role: UserRole | None = None
+    role: str | None = None
 
     @field_validator('password')
     def password_validator(cls, v: str) -> str:
@@ -48,4 +45,4 @@ class UserResponse(UserBase):
     id: int
     created_at: datetime
     is_active: bool = Field(default=True)
-    role: UserRole
+    role: str

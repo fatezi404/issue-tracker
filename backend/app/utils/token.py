@@ -12,9 +12,8 @@ async def add_tokens_to_redis(
     expire_time: int | None = None
 ):
     token_key = f'user:{user.id}:{token_type}'
-    valid_token = await get_valid_tokens(redis_client, user.id, token_type)
     await redis_client.sadd(token_key, token)
-    if not valid_token:
+    if expire_time:
         await redis_client.expire(token_key, timedelta(minutes=expire_time))
 
 

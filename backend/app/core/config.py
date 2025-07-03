@@ -4,14 +4,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class TokenType(str, Enum):
-    ACCESS = 'access_token'
-    REFRESH = 'refresh_token'
-
-
-class UserRole(str, Enum):
-    USER = 'user'
-    MODERATOR = 'moderator'
-    ADMIN = 'admin'
+    access = 'access_token'
+    refresh = 'refresh_token'
 
 
 class Settings(BaseSettings):

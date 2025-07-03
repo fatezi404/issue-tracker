@@ -4,10 +4,12 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from jose import ExpiredSignatureError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, verify_password, get_hashed_password, create_refresh_token
+from app.core.security import create_access_token, verify_password, get_hashed_password, create_refresh_token, \
+    decode_token
 from app.deps.user_deps import get_current_user
 from app.crud.user_crud import user
 from app.db.session import get_db, get_redis_db
@@ -45,20 +47,96 @@ async def login_access_token(
         user_auth.id,
         timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
-    valid_access_token = await get_valid_tokens(
-        redis_client,
-        access_token,
-        TokenType.ACCESS
+    refresh_token = create_refresh_token(
+        user_auth.id,
+        timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
     )
-    if valid_access_token:
-        await add_tokens_to_redis(
-            redis_client,
-            user_auth,
-            access_token,
-            TokenType.ACCESS,
-            settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
+    await delete_tokens(
+        redis_client,
+        user_auth.id,
+        TokenType.access
+    )
+    await delete_tokens(
+        redis_client,
+        user_auth.id,
+        TokenType.refresh
+    )
+    await add_tokens_to_redis(
+        redis_client,
+        user_auth,
+        access_token,
+        TokenType.access,
+        settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    await add_tokens_to_redis(
+        redis_client,
+        user_auth,
+        refresh_token,
+        TokenType.refresh,
+        settings.REFRESH_TOKEN_EXPIRE_MINUTES
+    )
     return TokenResponse(access_token=access_token, token_type='bearer')
+
+
+@router.post('/new-access-token', tags=['login'])
+async def create_new_access_token(
+    redis_client: Annotated[Redis, Depends(get_redis_db)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+    body: RefreshToken = Body(...)
+):
+    try:
+        payload = decode_token(body.refresh_token)
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Token is expired'
+        )
+    if payload['type'] == 'refresh':
+        user_id = payload['sub']
+        valid_refresh_token = await get_valid_tokens(
+            redis_client,
+            user_id,
+            TokenType.refresh
+        )
+        if not valid_refresh_token or body.refresh_token not in valid_refresh_token:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Wrong credentials or invalid refresh token'
+            )
+
+        user_in_db: User = await user.get(db=db, id=int(user_id))
+        if user_in_db.is_active:
+            access_token = create_access_token(
+                payload['sub'],
+                timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+            await delete_tokens(
+                redis_client,
+                user_id,
+                TokenType.access
+            )
+            await add_tokens_to_redis(
+                redis_client,
+                user_in_db,
+                access_token,
+                TokenType.access,
+                settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='User is inactive'
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Incorrect token'
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content='Access token created'
+    )
+
 
 
 @router.post('/change-password', tags=['login'])
@@ -96,20 +174,20 @@ async def change_password(
     await delete_tokens(
         redis_client,
         current_user.id,
-        TokenType.ACCESS
+        TokenType.access
     )
 
     await delete_tokens(
         redis_client,
         current_user.id,
-        TokenType.REFRESH
+        TokenType.refresh
     )
 
     await add_tokens_to_redis(
         redis_client=redis_client,
         user=current_user,
         token=access_token,
-        token_type=TokenType.ACCESS,
+        token_type=TokenType.access,
         expire_time=settings.ACCESS_TOKEN_EXPIRE_MINUTES
     )
 
@@ -117,7 +195,7 @@ async def change_password(
         redis_client=redis_client,
         user=current_user,
         token=refresh_token,
-        token_type=TokenType.REFRESH,
+        token_type=TokenType.refresh,
         expire_time=settings.REFRESH_TOKEN_EXPIRE_MINUTES
     )
 
