@@ -41,6 +41,14 @@ async def update_task(
     return updated_task
 
 
-# @router.delete('')
+@router.delete('/{id}', tags=['task'], status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task(id: int, db: Annotated[AsyncSession, Depends(get_db)]) -> Task | None:
+    chosen_task = task.get(db=db, id=id)
+    if not chosen_task:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Task does not exist'
+        )
+    return task.delete_task(id=id, db=db)
 
 # @router.get('')
