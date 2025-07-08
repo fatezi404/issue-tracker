@@ -8,7 +8,12 @@ from app.schemas.user_schema import UserCreate, UserUpdate
 
 
 class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
-    async def create_user(self, *, obj_in: UserCreate, db: AsyncSession) -> User:
+    async def create_user(
+        self,
+        *,
+        obj_in: UserCreate,
+        db: AsyncSession
+    ) -> User:
         db_user = User(**obj_in.model_dump(exclude={'password'}))
         db_user.hashed_password = get_hashed_password(obj_in.password)
         db.add(db_user)
@@ -16,7 +21,13 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         await db.refresh(db_user)
         return db_user
 
-    async def update_user(self, *, id: int, obj_in: UserUpdate, db: AsyncSession) -> User | None:
+    async def update_user(
+        self,
+        *,
+        id: int,
+        obj_in: UserUpdate,
+        db: AsyncSession
+    ) -> User | None:
         existing_user = await self.get(id=id, db=db)
         if not existing_user:
             return None
@@ -31,7 +42,13 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         await db.refresh(existing_user)
         return existing_user
 
-    async def authenticate(self, *, email: EmailStr, password: str, db: AsyncSession) -> User | None:
+    async def authenticate(
+        self,
+        *,
+        email: EmailStr,
+        password: str,
+        db: AsyncSession
+    ) -> User | None:
         existing_user = await self.get(email=str(email), db=db)
         if not existing_user:
             return None

@@ -8,15 +8,19 @@ from jose import ExpiredSignatureError
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import create_access_token, verify_password, get_hashed_password, create_refresh_token, \
+from app.core.security import (
+    create_access_token,
+    verify_password,
+    get_hashed_password,
+    create_refresh_token,
     decode_token
+)
 from app.deps.user_deps import get_current_user
 from app.crud.user_crud import user
 from app.db.session import get_db, get_redis_db
 from app.core.config import settings, TokenType
 from app.models.user_model import User
-from app.schemas.token_schema import TokenResponse, RefreshToken, Token
-from app.schemas.user_schema import UserUpdate
+from app.schemas.token_schema import TokenResponse, RefreshToken
 from app.utils.token import get_valid_tokens, add_tokens_to_redis, delete_tokens
 
 router = APIRouter()
@@ -136,7 +140,6 @@ async def create_new_access_token(
         status_code=status.HTTP_200_OK,
         content='Access token created'
     )
-
 
 
 @router.post('/change-password', tags=['login'])

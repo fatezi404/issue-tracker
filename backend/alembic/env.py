@@ -9,6 +9,7 @@ from alembic import context
 
 from app.db.session import Base
 from app.models import user_model
+from app.models import task_model
 
 load_dotenv()
 

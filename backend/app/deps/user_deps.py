@@ -37,7 +37,7 @@ async def get_current_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Wrong credentials'
         )
-    user_in_db: User = await user.get(db=db, id=user_id)
+    user_in_db: User = await user.get(db=db, id=int(user_id))
 
     if not user_in_db:
         raise HTTPException(
