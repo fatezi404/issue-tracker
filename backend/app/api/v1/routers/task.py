@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import JSONResponse
 
 from app.models.user_model import User
 from app.models.task_model import Task
@@ -26,7 +27,7 @@ async def create_task(
     return await task.create_task(obj_in=obj_with_reporter, db=db)
 
 
-@router.patch('/{id}', response_model=TaskResponse, tags=['task'], status_code=status.HTTP_200_OK)
+@router.patch('/{id}', response_model=TaskResponse, tags=['task'])
 async def update_task(
     id: int,
     obj_in: TaskUpdate,
@@ -42,13 +43,25 @@ async def update_task(
 
 
 @router.delete('/{id}', tags=['task'], status_code=status.HTTP_204_NO_CONTENT)
-async def delete_task(id: int, db: Annotated[AsyncSession, Depends(get_db)]) -> Task | None:
+async def delete_task(id: int, db: Annotated[AsyncSession, Depends(get_db)]):
     chosen_task = task.get(db=db, id=id)
     if not chosen_task:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Task does not exist'
         )
-    return task.delete_task(id=id, db=db)
+    await task.delete_task(id=id, db=db)
+    return JSONResponse(
+        status_code=status.HTTP_204_NO_CONTENT,
+        content='Task deleted'
+    )
 
-# @router.get('')
+@router.get('/{id}', response_model=TaskResponse, tags=['task']) # get by id
+async def get_tasks_by_id(id: int, db: Annotated[AsyncSession, Depends(get_db)]) -> Task | None:
+    task_db = await task.get(db=db, id=id)
+    if not task_db:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Task does not exist'
+        )
+    return task_db

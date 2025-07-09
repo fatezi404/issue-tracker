@@ -35,7 +35,7 @@ class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):
         *,
         id: int,
         db: AsyncSession
-    ) -> Task | None:
+    ):
         return await self.delete(db=db, id=id)
 
 task = CRUDTask(Task)
