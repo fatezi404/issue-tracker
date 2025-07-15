@@ -18,6 +18,8 @@ class TaskCreate(OrmBaseModel):
     def title_validator(cls, v: str) -> str:
         if len(v) > 256:
             raise ValueError('Title must have less than 256 characters.')
+        if len(v) < 3:
+            raise ValueError('Title must have at least 3 characters.')
         return v
 
     @field_validator('description')
@@ -38,6 +40,8 @@ class TaskUpdate(OrmBaseModel):
     def title_validator(cls, v: str) -> str:
         if len(v) > 256:
             raise ValueError('Title must have less than 256 characters.')
+        if len(v) < 3:
+            raise ValueError('Title must have at least 3 characters.')
         return v
 
     @field_validator('description')

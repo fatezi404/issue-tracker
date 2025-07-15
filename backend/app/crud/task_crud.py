@@ -2,7 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud.base_crud import CRUDBase
 from app.models.task_model import Task
-from app.schemas.task_schema import TaskResponse, TaskUpdate, TaskCreate
+from app.schemas.task_schema import TaskUpdate, TaskCreate
 
 
 class CRUDTask(CRUDBase[Task, TaskCreate, TaskUpdate]):

@@ -13,3 +13,8 @@ class User(Base):
     role = Column(String, default='user', nullable=False)
     created_at = Column(DateTime(timezone=True), index=True, server_default=func.now())
     is_active = Column(Boolean, default=True, nullable=False)
+    groups = relationship(
+        'Group',
+        secondary='user_group',
+        back_populates='users'
+    )

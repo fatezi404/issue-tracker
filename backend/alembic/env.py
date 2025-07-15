@@ -10,6 +10,7 @@ from alembic import context
 from app.db.session import Base
 from app.models import user_model
 from app.models import task_model
+from app.models import group_model
 
 load_dotenv()
 
