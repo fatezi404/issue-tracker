@@ -37,6 +37,18 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         await db.commit()
         return db_obj
 
+
+    async def get_all_users(
+        self,
+        *,
+        id: int,
+        db: AsyncSession
+    ):
+        response = await db.execute(select(user_group.c.user_id).where(user_group.c.group_id == id))
+        user_ids = [row[0] for row in response.all()]
+        return user_ids if user_ids else None
+
+
     #async def add_user_to_group(
     #    self,
     #    *,

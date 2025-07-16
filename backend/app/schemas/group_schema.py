@@ -31,4 +31,4 @@ class GroupResponse(OrmBaseModel):
 
 
 class GroupWithUsers(GroupResponse):
-    users: List[int] = []
+    users: List[int]
