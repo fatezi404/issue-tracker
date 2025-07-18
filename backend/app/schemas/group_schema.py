@@ -2,6 +2,8 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 
+from app.schemas.user_schema import UserResponse
+
 
 class OrmBaseModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -31,4 +33,4 @@ class GroupResponse(OrmBaseModel):
 
 
 class GroupWithUsers(GroupResponse):
-    users: List[int]
+    users: List[UserResponse]
