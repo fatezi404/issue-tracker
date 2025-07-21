@@ -16,6 +16,10 @@ class Task(Base):
     reporter_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True) # note: sozdatel
     is_done = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), index=True, server_default=func.now())
-
-    assignee_relate = relationship('User', foreign_keys=[assignee_id], backref='assigned_tasks')
-    reporter_relate = relationship('User', foreign_keys=[reporter_id], backref='reported_tasks')
+    group_id = Column(Integer, ForeignKey('groups.id'))
+    group = relationship(
+        'Group',
+        back_populates='tasks'
+    )
+    assignee = relationship('User', foreign_keys=[assignee_id], back_populates='assigned_tasks')
+    reporter = relationship('User', foreign_keys=[reporter_id], back_populates='reported_tasks')

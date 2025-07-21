@@ -12,7 +12,7 @@ class TaskCreate(OrmBaseModel):
     status: str
     priority: str
     assignee_id: int | None = None
-    reporter_id: int | None = None
+    group_id: int
 
     @field_validator('title')
     def title_validator(cls, v: str) -> str:
@@ -56,3 +56,4 @@ class TaskResponse(OrmBaseModel):
     created_at: datetime
     title: str
     reporter_id: int
+    group_id: int

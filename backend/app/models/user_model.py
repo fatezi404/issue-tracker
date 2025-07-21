@@ -18,3 +18,5 @@ class User(Base):
         secondary='user_group',
         back_populates='users'
     )
+    assigned_tasks = relationship('Task', foreign_keys='Task.assignee_id', back_populates='assignee')
+    reported_tasks = relationship('Task', foreign_keys='Task.reporter_id', back_populates='reporter')

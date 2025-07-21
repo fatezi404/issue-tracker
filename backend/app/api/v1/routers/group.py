@@ -50,15 +50,15 @@ async def get_all_users_from_group(
         )
     return users_in_group
 
+
 @router.post('/{group_id}', response_model=GroupWithUsers, tags=['group'])
 async def add_users_to_group(
     group_id: int,
     user_ids: List[int],
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
-    add_users = await group.add_user_to_group(id=group_id, user_ids=user_ids, db=db)
     try:
-        add_users
+        add_users = await group.add_user_to_group(id=group_id, user_ids=user_ids, db=db)
     except UserAlreadyInGroupError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

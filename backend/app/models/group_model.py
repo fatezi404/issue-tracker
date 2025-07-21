@@ -22,3 +22,7 @@ class Group(Base):
         secondary='user_group',
         back_populates='groups',
     )
+    tasks = relationship(
+        'Task',
+        back_populates='group'
+    )
