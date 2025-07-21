@@ -10,7 +10,7 @@ from app.schemas.group_schema import GroupCreate, GroupUpdate, GroupResponse, Gr
 from app.deps.user_deps import get_current_user
 from app.db.session import get_db
 from app.crud.group_crud import group
-from app.utils.exceptions import UserAlreadyInGroupError
+from app.utils.exceptions import UserAlreadyInGroupError, UserNotInGroupError, GroupNotInDatabaseError
 
 router = APIRouter()
 
@@ -23,7 +23,7 @@ async def create_group(
     return await group.create_group(obj_in=obj_in, creator=creator, db=db)
 
 
-@router.delete('/{group_id}', tags=['group'], status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('', tags=['group'], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
     group_id: int,
     db: Annotated[AsyncSession, Depends(get_db)]
@@ -66,3 +66,23 @@ async def add_users_to_group(
         )
 
     return add_users
+
+@router.delete('/{group_id}', response_model=GroupWithUsers, tags=['group'])
+async def delete_users_from_group(
+    group_id: int,
+    user_id: int,
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    try:
+        delete_user = await group.delete_user_from_group(group_id=group_id, user_id=user_id, db=db)
+    except GroupNotInDatabaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Group {e.group_id} not in database'
+        )
+    except UserNotInGroupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'User {e.user_id} not in group'
+        )
+    return delete_user

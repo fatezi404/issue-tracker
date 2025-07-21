@@ -6,8 +6,8 @@ from sqlalchemy.orm import selectinload
 from app.crud.base_crud import CRUDBase
 from app.models.user_model import User
 from app.models.group_model import Group, user_group
-from app.schemas.group_schema import GroupCreate, GroupUpdate, GroupResponse, GroupWithUsers
-from app.utils.exceptions import UserAlreadyInGroupError
+from app.schemas.group_schema import GroupCreate, GroupUpdate
+from app.utils.exceptions import UserAlreadyInGroupError, GroupNotInDatabaseError, UserNotInGroupError
 
 
 class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
@@ -24,6 +24,7 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
             response = await db.execute(select(User).where(User.id.in_(obj_in.users)))
             users = response.scalars().all()
             db_group.users.extend(users)
+        db_group.creator_id = creator.id
         db.add(db_group)
         await db.commit()
         await db.refresh(db_group)
@@ -82,6 +83,31 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         await db.commit()
         await db.refresh(group)
         return group
+
+
+    async def delete_user_from_group(
+        self,
+        *,
+        group_id: int,
+        user_id: int,
+        db: AsyncSession
+    ):
+        groups = await self.get(db=db, id=group_id)
+        if not groups:
+            raise GroupNotInDatabaseError(group_id=group_id)
+
+        users_in_group = await self.get_all_users(db=db, id=group_id)
+        if user_id not in [user.id for user in users_in_group]:
+            raise UserNotInGroupError(user_id=user_id)
+        response = await db.execute(
+            select(user_group)
+            .where(user_group.c.user_id == user_id)
+            .where(user_group.c.group_id == group_id))
+        db_user = response.scalar_one_or_none()
+        await db.delete(db_user)
+        await db.commit()
+        return db_user
+
 
 
 group = CRUDGroup(Group)

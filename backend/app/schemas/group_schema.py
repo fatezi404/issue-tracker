@@ -30,6 +30,7 @@ class GroupResponse(OrmBaseModel):
     id: int
     title: str
     created_at: datetime
+    creator_id: int
 
 
 class GroupWithUsers(GroupResponse):

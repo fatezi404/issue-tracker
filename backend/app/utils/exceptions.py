@@ -9,8 +9,12 @@ class TaskNotInDatabaseError(Exception):
         self.task_id = task_id
         super().__init__(f'Task {task_id} not found in database or ID is incorrect')
 
-class UserAlreadyInGroupError(Exception):
-    def __init__(self, user_id: int, group_id: int):
-        self.user_id = user_id
+class GroupNotInDatabaseError(Exception):
+    def __init__(self, group_id: int):
         self.group_id = group_id
-        super().__init__(f'User {user_id} already in group {group_id}')
+        super().__init__(f'Group {group_id} not found')
+
+class UserNotInGroupError(Exception):
+    def __init__(self, user_id: int):
+        self.user_id = user_id
+        super().__init__(f'User {user_id} not in group')
