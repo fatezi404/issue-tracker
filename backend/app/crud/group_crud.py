@@ -7,7 +7,13 @@ from app.crud.base_crud import CRUDBase
 from app.models.user_model import User
 from app.models.group_model import Group, user_group
 from app.schemas.group_schema import GroupCreate, GroupUpdate
-from app.utils.exceptions import UserAlreadyInGroupError, GroupNotInDatabaseError, UserNotInGroupError, UserHaveNoRightsError
+from app.utils.exceptions import (
+    UserAlreadyInGroupError,
+    GroupNotInDatabaseError,
+    UserNotInGroupError,
+    UserHaveNoRightsError,
+    UserIsGroupCreator
+)
 
 
 class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
@@ -38,11 +44,6 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         current_user: User,
         db: AsyncSession
     ):
-        # await self.delete(db=db, id=id)
-        #group_creator = await db.execute(select(Group).where(Group.id == id))
-        #group_obj = group_creator.scalar_one_or_none()
-        #if not group_obj:
-        #    return None
         group_obj = await self.get(db=db, id=id)
         if not group_obj:
             raise GroupNotInDatabaseError(group_id=id)
@@ -115,6 +116,28 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
             delete(user_group)
             .where(user_group.c.user_id == user_id)
             .where(user_group.c.group_id == group_id))
+        await db.commit()
+
+    async def leave_group(
+        self,
+        *,
+        group_id: int,
+        current_user: User,
+        db: AsyncSession
+    ):
+        user_group_obj = await self.get_all_users(db=db, id=group_id)
+        if not user_group_obj:
+            raise GroupNotInDatabaseError(group_id=group_id)
+        if current_user.id not in [user.id for user in user_group_obj.users]:
+            raise UserNotInGroupError(user_id=current_user.id)
+
+        group_obj = await self.get(db=db, id=group_id)
+        if current_user.id == group_obj.creator_id:
+            raise UserIsGroupCreator(current_user.id, group_id)
+        await db.execute(
+            delete(user_group)
+            .where(user_group.c.group_id == group_id)
+            .where(user_group.c.user_id == current_user.id))
         await db.commit()
 
 

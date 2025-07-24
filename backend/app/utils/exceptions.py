@@ -24,3 +24,9 @@ class UserHaveNoRightsError(Exception):
         self.user_id = user_id
         self.group_id = group_id
         super().__init__(f'User {user_id} have no rights to do such actions in group {group_id}')
+
+class UserIsGroupCreator(Exception):
+    def __init__(self, user_id: int, group_id: int):
+        self.user_id = user_id
+        self.group_id = group_id
+        super().__init__(f'User {user_id} is a creator of group {group_id}')

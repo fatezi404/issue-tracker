@@ -1,16 +1,21 @@
 from typing import Annotated, List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import JSONResponse
 
 from app.models.user_model import User
-from app.models.group_model import Group
-from app.schemas.group_schema import GroupCreate, GroupUpdate, GroupResponse, GroupWithUsers
+from app.schemas.group_schema import GroupCreate, GroupResponse, GroupWithUsers
 from app.deps.user_deps import get_current_user
 from app.db.session import get_db
 from app.crud.group_crud import group
-from app.utils.exceptions import UserAlreadyInGroupError, UserNotInGroupError, GroupNotInDatabaseError, UserHaveNoRightsError
+from app.utils.exceptions import (
+    UserAlreadyInGroupError,
+    UserNotInGroupError,
+    GroupNotInDatabaseError,
+    UserHaveNoRightsError,
+    UserIsGroupCreator
+)
 
 router = APIRouter()
 
@@ -23,7 +28,7 @@ async def create_group(
     return await group.create_group(obj_in=obj_in, creator=creator, db=db)
 
 
-@router.delete('', tags=['group'], status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('', tags=['group'], status_code=status.HTTP_200_OK)
 async def delete_group(
     group_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -41,6 +46,10 @@ async def delete_group(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f'Group {e.group_id} not found'
         )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=f'Group {group_id} successfully deleted'
+    )
 
 
 @router.get('/{group_id}', response_model=GroupWithUsers, tags=['group'])
@@ -63,7 +72,7 @@ async def get_all_users_from_group(
     return users_in_group
 
 
-@router.post('/{group_id}', response_model=GroupWithUsers, tags=['group'])
+@router.post('/{group_id}', response_model=GroupWithUsers, tags=['group'], status_code=status.HTTP_200_OK)
 async def add_users_to_group(
     group_id: int,
     user_ids: List[int],
@@ -116,4 +125,32 @@ async def delete_users_from_group(
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=f'Successfully deleted user {user_id}'
+    )
+
+@router.delete('/leave-group/{group_id}', tags=['group'], status_code=status.HTTP_200_OK)
+async def leave_group(
+    group_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: Annotated[AsyncSession, Depends(get_db)]
+):
+    try:
+        await group.leave_group(group_id=group_id, current_user=current_user, db=db)
+    except GroupNotInDatabaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Group {e.group_id} not found'
+        )
+    except UserNotInGroupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'User {e.user_id} not in group'
+        )
+    except UserIsGroupCreator as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'User {e.user_id} is a creator of group {e.group_id}. You can just delete the group'
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=f'You successfully left group {group_id}'
     )
