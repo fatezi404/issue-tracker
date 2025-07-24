@@ -10,7 +10,7 @@ from app.schemas.group_schema import GroupCreate, GroupUpdate, GroupResponse, Gr
 from app.deps.user_deps import get_current_user
 from app.db.session import get_db
 from app.crud.group_crud import group
-from app.utils.exceptions import UserAlreadyInGroupError, UserNotInGroupError, GroupNotInDatabaseError
+from app.utils.exceptions import UserAlreadyInGroupError, UserNotInGroupError, GroupNotInDatabaseError, UserHaveNoRightsError
 
 router = APIRouter()
 
@@ -26,9 +26,21 @@ async def create_group(
 @router.delete('', tags=['group'], status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(
     group_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
-    return await group.delete_group(id=group_id, db=db)
+    try:
+        group_del = await group.delete_group(id=group_id, db=db, current_user=current_user)
+    except UserHaveNoRightsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'User {current_user.id} have no rights to do such actions in group {group_id}'
+        )
+    except GroupNotInDatabaseError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Group {e.group_id} not found'
+        )
 
 
 @router.get('/{group_id}', response_model=GroupWithUsers, tags=['group'])
@@ -67,22 +79,41 @@ async def add_users_to_group(
 
     return add_users
 
-@router.delete('/{group_id}', response_model=GroupWithUsers, tags=['group'])
+@router.delete('/{group_id}', tags=['group'], status_code=status.HTTP_200_OK)
 async def delete_users_from_group(
     group_id: int,
     user_id: int,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)]
 ):
     try:
-        delete_user = await group.delete_user_from_group(group_id=group_id, user_id=user_id, db=db)
+        delete_user = await group.delete_user_from_group(
+            group_id=group_id,
+            user_id=user_id,
+            db=db,
+            current_user=current_user
+        )
     except GroupNotInDatabaseError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f'Group {e.group_id} not in database'
+            detail=f'Group {e.group_id} not found'
+        )
+    except UserHaveNoRightsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'User {current_user.id} have no rights to do such actions in group {group_id}'
         )
     except UserNotInGroupError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f'User {e.user_id} not in group'
         )
-    return delete_user
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f'Wrong ID {user_id}. You cannot delete yourself'
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=f'Successfully deleted user {user_id}'
+    )

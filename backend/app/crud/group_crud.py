@@ -1,13 +1,13 @@
 from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.orm import selectinload
 
 from app.crud.base_crud import CRUDBase
 from app.models.user_model import User
 from app.models.group_model import Group, user_group
 from app.schemas.group_schema import GroupCreate, GroupUpdate
-from app.utils.exceptions import UserAlreadyInGroupError, GroupNotInDatabaseError, UserNotInGroupError
+from app.utils.exceptions import UserAlreadyInGroupError, GroupNotInDatabaseError, UserNotInGroupError, UserHaveNoRightsError
 
 
 class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
@@ -30,20 +30,28 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         await db.refresh(db_group)
         return db_group
 
+
     async def delete_group(
         self,
         *,
         id: int,
+        current_user: User,
         db: AsyncSession
     ):
-        await self.delete(db=db, id=id)
-        response = await db.execute(select(user_group).where(user_group.c.group_id == id))
-        db_obj = response.scalar_one_or_none()
-        if not db_obj:
-            return None
-        await db.delete(db_obj)
+        # await self.delete(db=db, id=id)
+        #group_creator = await db.execute(select(Group).where(Group.id == id))
+        #group_obj = group_creator.scalar_one_or_none()
+        #if not group_obj:
+        #    return None
+        group_obj = await self.get(db=db, id=id)
+        if not group_obj:
+            raise GroupNotInDatabaseError(group_id=id)
+        if current_user.id != group_obj.creator_id:
+            raise UserHaveNoRightsError(current_user.id, id)
+        await db.execute(delete(user_group).where(user_group.c.group_id == id))
+        await db.delete(group_obj)
         await db.commit()
-        return db_obj
+        return group_obj
 
 
     async def get_all_users(
@@ -90,23 +98,24 @@ class CRUDGroup(CRUDBase[Group, GroupCreate, GroupUpdate]):
         *,
         group_id: int,
         user_id: int,
+        current_user: User,
         db: AsyncSession
     ):
-        groups = await self.get(db=db, id=group_id)
-        if not groups:
+        group_obj = await self.get_all_users(db=db, id=group_id)
+        if current_user.id != group_obj.creator_id:
+            raise UserHaveNoRightsError(current_user.id, group_id)
+        if not group_obj:
             raise GroupNotInDatabaseError(group_id=group_id)
+        if current_user.id == user_id:
+            raise ValueError(f'Wrong ID - {user_id}. You cannot delete yourself.')
 
-        users_in_group = await self.get_all_users(db=db, id=group_id)
-        if user_id not in [user.id for user in users_in_group]:
+        if user_id not in [user.id for user in group_obj.users]:
             raise UserNotInGroupError(user_id=user_id)
-        response = await db.execute(
-            select(user_group)
+        await db.execute(
+            delete(user_group)
             .where(user_group.c.user_id == user_id)
             .where(user_group.c.group_id == group_id))
-        db_user = response.scalar_one_or_none()
-        await db.delete(db_user)
         await db.commit()
-        return db_user
 
 
 
